@@ -175,7 +175,9 @@ export default function AdminApp() {
   useEffect(() => {
     if (checking) return
     if (authorized) {
-      if (location.pathname.startsWith('/admin/login')) navigate('/admin', { replace: true })
+      if (location.pathname === '/admin' || location.pathname.startsWith('/admin/login')) {
+        navigate('/admin/dashboard', { replace: true })
+      }
     } else if (location.pathname.startsWith('/admin') && location.pathname !== '/admin/login') {
       navigate('/admin/login', { replace: true })
     }
@@ -664,7 +666,7 @@ export default function AdminApp() {
       if (error) setAuthError(error.message)
       else if (data.session) {
         const verified = await verifyAdmin(data.session)
-        if (verified) navigate('/admin', { replace: true })
+        if (verified) navigate('/admin/dashboard', { replace: true })
       }
     } catch (error) {
       setAuthError(error.message || 'Sign in failed. Check your connection and try again.')
@@ -717,7 +719,7 @@ export default function AdminApp() {
         await supabase.auth.signOut()
       } else {
         setMessage('Password updated.')
-        navigate('/admin', { replace: true })
+        navigate('/admin/dashboard', { replace: true })
       }
     } catch (error) {
       setAuthError(`Password could not be updated: ${error.message || 'A network error occurred.'}`)
