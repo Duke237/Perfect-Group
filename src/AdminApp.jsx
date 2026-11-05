@@ -83,6 +83,10 @@ export default function AdminApp() {
   const [notificationsError, setNotificationsError] = useState('')
   const [selectedNotification, setSelectedNotification] = useState(null)
   const [topSearch, setTopSearch] = useState('')
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+  const topSearchRef = useRef(null)
+  const topSearchInputRef = useRef(null)
+  const notificationsRef = useRef(null)
   const [analyticsRange, setAnalyticsRange] = useState(7)
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
   const [analyticsViews, setAnalyticsViews] = useState({ total_views: 0, unique_visitors: 0, daily: [], top_pages: [] })
@@ -112,6 +116,49 @@ export default function AdminApp() {
       document.documentElement.classList.remove('admin-scrollbars')
     }
   }, [profile?.preferences?.compact_mode])
+
+  useEffect(() => {
+    if (!mobileSearchOpen) return undefined
+    const closeOnOutsideClick = (event) => {
+      if (!topSearchRef.current?.contains(event.target)) {
+        setMobileSearchOpen(false)
+        setTopSearch('')
+      }
+    }
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') {
+        setMobileSearchOpen(false)
+        setNavOpen(false)
+        setTopSearch('')
+      }
+    }
+    document.addEventListener('pointerdown', closeOnOutsideClick)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsideClick)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [mobileSearchOpen])
+
+  useEffect(() => {
+    if (!notificationsOpen) return undefined
+    const closeOnOutsideClick = (event) => {
+      if (!notificationsRef.current?.contains(event.target)) setNotificationsOpen(false)
+    }
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setNotificationsOpen(false)
+    }
+    document.addEventListener('pointerdown', closeOnOutsideClick)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsideClick)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [notificationsOpen])
+
+  useEffect(() => {
+    if (mobileSearchOpen) topSearchInputRef.current?.focus()
+  }, [mobileSearchOpen])
 
   const verifyAdmin = useCallback(async (currentSession, isActive = () => true) => {
     if (!supabase) return false
@@ -1151,6 +1198,7 @@ export default function AdminApp() {
     if (error) setMessage(`Sign out failed: ${error.message}`)
     else {
       setProfileOpen(false)
+      setNotificationsOpen(false)
       setNotifications([])
       navigate('/admin/login', { replace: true })
     }
@@ -1184,6 +1232,8 @@ export default function AdminApp() {
     setStatusFilter('all')
     setTopSearch('')
     setSelectedNotification(null)
+    setNotificationsOpen(false)
+    setMobileSearchOpen(false)
     setProfileOpen(false)
     if (tab !== 'chat') setChatSearch('')
     setMessage('')
@@ -1280,9 +1330,39 @@ export default function AdminApp() {
       {tabs.filter((tab) => contentKinds.has(tab)).map((tab) => <button key={tab} className={activeTab === tab ? 'active' : ''} onClick={() => navigateDashboard(tab)}><FileText size={17} /><span>{kindLabels[tab]}</span></button>)}
       <button className={activeTab === 'media' ? 'active' : ''} onClick={() => navigateDashboard('media')}><Image size={17} /><span>Media library</span></button>
       <button className={activeTab === 'settings' ? 'active' : ''} onClick={() => navigateDashboard('settings')}><Settings size={17} /><span>Settings</span></button>
-    </nav><div className="admin-sidebar-bottom"><span className="admin-label admin-nav-section">ACCOUNT</span><div className="admin-account-summary"><ProfileAvatar url={profile?.avatar_url} name={profile?.full_name || session.user.email} /><div><strong>{profile?.full_name || session.user.email}</strong><small>{profile?.role || 'Administrator'}</small></div></div><button className="admin-logout-button" onClick={signOut}><LogOut size={15} /> Logout</button><Link to="/" target="_blank">View website <ArrowUpRight size={15} /></Link></div></aside>
+    </nav><div className="admin-sidebar-bottom"><span className="admin-label admin-nav-section">ACCOUNT</span><div className="admin-account-summary"><ProfileAvatar url={profile?.avatar_url} name={profile?.full_name || session.user.email} /><div><strong>{profile?.full_name || session.user.email}</strong><small>{profile?.role || 'Administrator'}</small></div></div><div className="admin-sidebar-account-links"><button onClick={() => navigateDashboard('profile')}>View profile</button><button onClick={() => { setSettingsSection('account'); navigateDashboard('settings') }}>Account settings</button><button onClick={() => { setSettingsSection('security'); navigateDashboard('settings') }}>Security settings</button>{userRole === 'admin' && <button onClick={() => { setSettingsSection('site'); navigateDashboard('settings') }}>Site settings</button>}</div><button className="admin-logout-button" onClick={signOut}><LogOut size={15} /> Logout</button><Link to="/" target="_blank">View website <ArrowUpRight size={15} /></Link></div></aside>
     <button className="admin-nav-backdrop" aria-label="Close navigation" onClick={() => setNavOpen(false)} />
-    <main className="admin-main"><header className="admin-topbar"><div className="admin-branding"><button className="admin-menu-toggle" aria-label="Open navigation" onClick={() => setNavOpen(true)}><Menu size={19} /></button><img className="admin-mobile-logo" src={logoPath} alt="Again" /><div><span className="admin-label">AGAIN WEBSITE</span><strong>{tabLabel(activeTab)}</strong></div></div><div className="admin-top-actions"><div className="admin-search-wrap"><div className="admin-search-control"><label className="admin-global-search"><Search size={16} aria-hidden="true" /><input type="search" value={topSearch} onChange={(event) => setTopSearch(event.target.value)} onKeyDown={(event) => { if (event.key === 'Escape') setTopSearch('') }} placeholder="Search dashboard" aria-label="Search dashboard" aria-expanded={Boolean(topSearch.trim())} aria-controls="admin-search-results" /></label>{topSearch && <button className="admin-search-clear" type="button" aria-label="Clear search" onClick={() => setTopSearch('')}><X size={15} /></button>}</div>{topSearch.trim() && <div className="admin-search-results" id="admin-search-results" role="listbox">{searchResults.length ? searchResults.map(({ type, item }) => <button key={`${type}-${item.id}`} role="option" onClick={() => { if (type === 'content') { navigateDashboard(item.kind); setEditing(item) } else { navigateDashboard('inquiries'); setSearch(item.email || item.name) } setTopSearch('') }}><span>{type === 'content' ? item.title : item.name || 'Website enquiry'}</span><small>{type === 'content' ? `${kindLabels[item.kind] || item.kind} · ${item.status}` : `Enquiry · ${item.email}`}</small></button>) : <p>No matching content or enquiries.</p>}<button className="admin-search-close" type="button" onClick={() => setTopSearch('')}>Close results</button></div>}</div><button className="admin-icon-button" aria-label="Open notifications" title="Notifications" onClick={() => { navigateDashboard('notifications'); setSelectedNotification(null) }}><Bell size={18} />{notifications.some((item) => !item.is_read) && <i />}</button><div className="admin-popover-wrap"><button className="admin-user" aria-label="Open user profile menu"     aria-expanded={profileOpen} onClick={() => setProfileOpen((open) => !open)}><ProfileAvatar url={profile?.avatar_url} name={profile?.full_name || session.user.email} /><span>{profile?.full_name || session.user.email}</span><ChevronDown size={15} /></button>{profileOpen && <div className="admin-popover"><strong>{profile?.full_name || 'Account'}</strong><button onClick={() => { navigateDashboard('profile') }}>View profile</button><button onClick={() => { setSettingsSection('account'); navigateDashboard('settings') }}>Account settings</button><button onClick={() => { setSettingsSection('security'); navigateDashboard('settings') }}>Security settings</button>{userRole === 'admin' && <button onClick={() => { setSettingsSection('site'); navigateDashboard('settings') }}>Site settings</button>}<button className="admin-popover-logout" onClick={signOut}>Log out</button></div>}</div></div></header><section className="admin-content"><div className="admin-heading"><div><span className="admin-label">MANAGE YOUR WEBSITE</span><h1>{tabLabel(activeTab)}</h1><p>{tabDescription(activeTab)}</p></div>{contentKinds.has(activeTab) && <button className="button button-primary" onClick={() => { const homepage = activeTab === 'homepage' ? items.find((item) => item.kind === 'homepage') : null; setEditing(homepage || { kind: activeTab, status: 'draft', metadata: {} }); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>{activeTab === 'homepage' && items.some((item) => item.kind === 'homepage') ? 'Edit homepage' : <><Plus size={16} /> Add {kindLabels[activeTab]?.toLowerCase()}</>}</button>}{activeTab === 'media' && <label className="button button-primary media-upload"><Plus size={16} /> Upload image<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" onChange={uploadMedia} hidden /></label>}</div>
+    <main className="admin-main">
+      <header className={`admin-topbar ${mobileSearchOpen ? 'admin-search-open' : ''}`}>
+        <div className="admin-branding">
+          <img className="admin-mobile-logo" src={logoPath} alt="Again" />
+          <div><span className="admin-label">AGAIN WEBSITE</span><strong>{tabLabel(activeTab)}</strong></div>
+        </div>
+        <div className="admin-top-actions">
+          <div className="admin-search-wrap" ref={topSearchRef}>
+            <button className="admin-search-toggle" type="button" aria-label="Search dashboard" aria-expanded={mobileSearchOpen} onClick={() => setMobileSearchOpen((open) => !open)}><Search size={18} /></button>
+            <div className="admin-search-control">
+              <label className="admin-global-search"><Search size={16} aria-hidden="true" /><input ref={topSearchInputRef} type="search" value={topSearch} onChange={(event) => setTopSearch(event.target.value)} onKeyDown={(event) => { if (event.key === 'Escape') { setMobileSearchOpen(false); setNavOpen(false); setTopSearch('') } }} placeholder="Search dashboard" aria-label="Search dashboard" aria-expanded={mobileSearchOpen || Boolean(topSearch.trim())} aria-controls="admin-search-results" /></label>
+              {topSearch && <button className="admin-search-clear" type="button" aria-label="Clear search" onClick={() => setTopSearch('')}><X size={15} /></button>}
+            </div>
+            {topSearch.trim() && <div className="admin-search-results" id="admin-search-results" role="listbox">{searchResults.length ? searchResults.map(({ type, item }) => <button key={`${type}-${item.id}`} role="option" onClick={() => { if (type === 'content') { navigateDashboard(item.kind); setEditing(item) } else { navigateDashboard('inquiries'); setSearch(item.email || item.name) } setTopSearch(''); setMobileSearchOpen(false) }}><span>{type === 'content' ? item.title : item.name || 'Website enquiry'}</span><small>{type === 'content' ? `${kindLabels[item.kind] || item.kind} · ${item.status}` : `Enquiry · ${item.email}`}</small></button>) : <p>No matching content or enquiries.</p>}<button className="admin-search-close" type="button" onClick={() => { setTopSearch(''); setMobileSearchOpen(false) }}>Close results</button></div>}
+          </div>
+          {mobileSearchOpen && <button className="admin-mobile-search-close" type="button" aria-label="Close search" onClick={() => { setMobileSearchOpen(false); setTopSearch('') }}><X size={18} /></button>}
+          <div className="admin-popover-wrap" ref={notificationsRef}>
+            <button className="admin-icon-button" aria-label="Open notifications" aria-expanded={notificationsOpen} title="Notifications" onClick={() => setNotificationsOpen((open) => !open)}><Bell size={18} />{notifications.some((item) => !item.is_read) && <i />}</button>
+            {notificationsOpen && <div className="admin-notification-popover" role="dialog" aria-label="Recent notifications">
+              <div className="admin-notification-popover-heading"><strong>Notifications</strong><button type="button" onClick={() => { setNotificationsOpen(false); navigateDashboard('notifications') }}>View all</button></div>
+              {notificationsLoading ? <p className="admin-notification-popover-empty">Loading notifications…</p> : notificationsError ? <p className="admin-notification-popover-empty" role="alert">{notificationsError}</p> : notifications.length ? notifications.slice(0, 6).map((notification) => <button className={`admin-notification-popover-row ${notification.is_read ? '' : 'is-unread'}`} key={notification.id} type="button" onClick={() => { setNotificationsOpen(false); navigateDashboard('notifications'); openNotification(notification) }}><span className={`notification-dot ${notification.is_read ? '' : 'is-unread'}`} /><span><strong>{notification.title}</strong><small>{notification.body}</small></span></button>) : <p className="admin-notification-popover-empty">No notifications yet.</p>}
+            </div>}
+          </div>
+          <div className="admin-popover-wrap admin-profile-wrap">
+            <button className="admin-user" aria-label="Open user profile menu" aria-expanded={profileOpen} onClick={() => setProfileOpen((open) => !open)}><ProfileAvatar url={profile?.avatar_url} name={profile?.full_name || session.user.email} /><span>{profile?.full_name || session.user.email}</span><ChevronDown size={15} /></button>
+            {profileOpen && <div className="admin-popover"><strong>{profile?.full_name || 'Account'}</strong><button onClick={() => { navigateDashboard('profile') }}>View profile</button><button onClick={() => { setSettingsSection('account'); navigateDashboard('settings') }}>Account settings</button><button onClick={() => { setSettingsSection('security'); navigateDashboard('settings') }}>Security settings</button>{userRole === 'admin' && <button onClick={() => { setSettingsSection('site'); navigateDashboard('settings') }}>Site settings</button>}<button className="admin-popover-logout" onClick={signOut}>Log out</button></div>}
+          </div>
+          <button className="admin-menu-toggle" type="button" aria-label={navOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={navOpen} onClick={() => setNavOpen((open) => !open)}><Menu size={19} /></button>
+        </div>
+      </header>
+      <section className="admin-content"><div className="admin-heading"><div><span className="admin-label">MANAGE YOUR WEBSITE</span><h1>{tabLabel(activeTab)}</h1><p>{tabDescription(activeTab)}</p></div>{contentKinds.has(activeTab) && <button className="button button-primary" onClick={() => { const homepage = activeTab === 'homepage' ? items.find((item) => item.kind === 'homepage') : null; setEditing(homepage || { kind: activeTab, status: 'draft', metadata: {} }); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>{activeTab === 'homepage' && items.some((item) => item.kind === 'homepage') ? 'Edit homepage' : <><Plus size={16} /> Add {kindLabels[activeTab]?.toLowerCase()}</>}</button>}{activeTab === 'media' && <label className="button button-primary media-upload"><Plus size={16} /> Upload image<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" onChange={uploadMedia} hidden /></label>}</div>
       {message && <p className="admin-message" role="status">{message}</p>}{dataError && <><p className="form-error" role="alert">{dataError}</p><button className="button button-secondary" type="button" onClick={loadAdminData} disabled={busy}>Retry</button></>}
       {activeTab === 'notifications' && <NotificationsScreen
         notifications={notifications}
