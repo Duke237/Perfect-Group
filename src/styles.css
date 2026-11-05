@@ -1440,14 +1440,15 @@ html.admin-scrollbars::-webkit-scrollbar-thumb:hover,
 @media (max-width: 650px) {
   .admin-topbar { min-height: 64px; height: 64px; flex-wrap: nowrap; gap: 0; padding: 8px 12px; }
   .admin-branding { width: auto; min-width: 0; flex: 1 1 auto; gap: 0; }
-  .admin-mobile-logo { width: 58px; height: 42px; display: block; flex: 0 0 58px; object-fit: contain; object-position: left center; }
+  .admin-mobile-logo { width: 64px; height: 46px; display: block; flex: 0 0 64px; object-fit: contain; object-position: left center; }
   .admin-branding > div { position: absolute; top: 50%; left: 50%; width: max-content; max-width: calc(100vw - 280px); min-width: 72px; transform: translate(-50%,-50%); text-align: center; }
   .admin-branding .admin-label { display: none; }
   .admin-branding strong { display: block; overflow: hidden; font-size: 12px; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
   .admin-top-actions { width: auto; flex: 0 0 auto; gap: 2px; margin-left: auto; }
   .admin-top-actions .admin-profile-wrap { display: none; }
   .admin-top-actions .admin-icon-button,.admin-menu-toggle,.admin-search-toggle,.admin-mobile-search-close { width: 40px; height: 40px; min-width: 40px; min-height: 40px; display: grid; place-items: center; padding: 0; border-radius: 5px; }
-  .admin-search-toggle { color: #506471; background: transparent; cursor: pointer; }
+  .admin-search-toggle { appearance: none; border: 0; outline: 0; box-shadow: none; color: #506471; background: transparent; cursor: pointer; }
+  .admin-search-toggle:focus-visible { outline: 2px solid #67baf4; outline-offset: 2px; }
   .admin-search-wrap { position: static; width: 40px; flex: 0 0 40px; }
   .admin-search-control { display: none; }
   .admin-search-open .admin-search-wrap { position: absolute; z-index: 25; top: calc(100% + 6px); right: 12px; left: 12px; width: auto; padding: 8px; border: 1px solid #e1e7ea; background: #fff; box-shadow: 0 12px 30px #1739551a; animation: admin-search-reveal 160ms ease-out both; }
@@ -1520,7 +1521,7 @@ html.admin-scrollbars::-webkit-scrollbar-thumb:hover,
 
 @media (max-width: 380px) {
   .admin-topbar { padding-right: 8px; padding-left: 8px; }
-  .admin-mobile-logo { width: 48px; flex-basis: 48px; }
+  .admin-mobile-logo { width: 54px; flex-basis: 54px; }
   .admin-branding > div { max-width: calc(100vw - 280px); }
   .admin-top-actions { gap: 0; }
   .admin-top-actions .admin-icon-button,.admin-menu-toggle,.admin-search-toggle,.admin-mobile-search-close { width: 36px; min-width: 36px; }

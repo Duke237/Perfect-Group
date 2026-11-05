@@ -1500,8 +1500,12 @@ function DashboardOverview({ stats, recent, loading, onNavigate, onEdit }) {
 }
 
 function ProfileAvatar({ url, name, className = '' }) {
-    return url
-      ? <img className={`admin-avatar ${className}`} src={url} alt="" />
+    const [imageFailed, setImageFailed] = useState(false)
+
+    useEffect(() => setImageFailed(false), [url])
+
+    return url && !imageFailed
+      ? <img className={`admin-avatar ${className}`} src={url} alt="" onError={() => setImageFailed(true)} />
       : <span className={`admin-avatar ${className}`}>{avatarInitials(name)}</span>
 }
 
